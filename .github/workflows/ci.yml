@@ -80,16 +80,20 @@ jobs:
 
       - name: Plugin load test
         run: |
-          # Load as a proper package (matches how Hermes loads it) by putting
-          # the parent dir on sys.path and importing by package name.
-          cd \${{ github.workspace }}
+          # Load as a proper package (matches how Hermes loads it). For Python
+          # to import the plugin as `openviking_extra`, the PARENT directory
+          # must be on sys.path — not the plugin's own directory. (Putting the
+          # plugin's own dir on path makes Python look for a *module* named
+          # `openviking_extra.py` in it, which doesn't exist.)
+          cd ..
+          pwd
+          ls
           python3 -c "
           import sys, os
           from unittest.mock import MagicMock
 
-          # Ensure the plugin directory itself is on sys.path so 'openviking_extra'
-          # can be imported as a package (the `from . import` inside __init__.py
-          # requires this).
+          # cwd is the PARENT directory; add it to path so 'openviking_extra'
+          # resolves to ./openviking_extra/__init__.py
           sys.path.insert(0, os.getcwd())
           import openviking_extra
 
