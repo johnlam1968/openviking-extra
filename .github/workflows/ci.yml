@@ -82,28 +82,34 @@ jobs:
         run: |
           # Load as a proper package (matches how Hermes loads it). For Python
           # to import the plugin as `openviking_extra`, the PARENT directory
-          # must be on sys.path — not the plugin's own directory. (Putting the
-          # plugin's own dir on path makes Python look for a *module* named
-          # `openviking_extra.py` in it, which doesn't exist.)
+          # must be on sys.path — not the plugin's own directory.
           cd ..
-          pwd
-          ls
+          echo "DEBUG: cwd is $(pwd)"
+          echo "DEBUG: contents are:"
+          ls -la
+          echo "DEBUG: openviking_extra subdir:"
+          ls -la openviking_extra/
+          echo "DEBUG: running python:"
           python3 -c "
           import sys, os
-          from unittest.mock import MagicMock
-
-          # cwd is the PARENT directory; add it to path so 'openviking_extra'
-          # resolves to ./openviking_extra/__init__.py
+          print('DEBUG: sys.path before insert:', sys.path[:3])
           sys.path.insert(0, os.getcwd())
-          import openviking_extra
-
-          ctx = MagicMock()
-          openviking_extra.register(ctx)
-          print(f'Loaded plugin: {openviking_extra.__version__}')
-          print(f'Registered {ctx.register_tool.call_count} tools, {ctx.register_hook.call_count} hook(s)')
-          assert ctx.register_tool.call_count == 6, f'Expected 6 tools, got {ctx.register_tool.call_count}'
-          assert ctx.register_hook.call_count == 1, f'Expected 1 hook, got {ctx.register_hook.call_count}'
-          print('✓ Plugin loads correctly')
+          print('DEBUG: sys.path after insert:', sys.path[:3])
+          from unittest.mock import MagicMock
+          try:
+              import openviking_extra
+              print('DEBUG: imported openviking_extra OK')
+              print('DEBUG: __file__:', openviking_extra.__file__)
+              ctx = MagicMock()
+              openviking_extra.register(ctx)
+              print(f'Loaded plugin: {openviking_extra.__version__}')
+              print(f'Registered {ctx.register_tool.call_count} tools, {ctx.register_hook.call_count} hook(s)')
+              assert ctx.register_tool.call_count == 6, f'Expected 6 tools, got {ctx.register_tool.call_count}'
+              assert ctx.register_hook.call_count == 1, f'Expected 1 hook, got {ctx.register_hook.call_count}'
+              print('✓ Plugin loads correctly')
+          except Exception as e:
+              print(f'✗ Plugin load FAILED: {type(e).__name__}: {e}')
+              raise
           "
 
   version-consistency:
